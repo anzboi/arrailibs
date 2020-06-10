@@ -1,0 +1,32 @@
+let g = {://grammar.lang.wbnf.grammar:
+    stream -> objects=object:/{};
+    json   -> (object|array|STR|NUM|BOOL|NULL);
+    object -> "{" (pair=(STR ":" json):",")? "}";
+    array  -> "[" (json:",")? "]";
+    STR    -> /{ " (?: \\. | [^\\"] )* " };
+    // "
+    NUM    -> /{ (?: \d+(?:\.\d*)? | \.\d+ ) (?: [Ee][-+]?\d+ )? };
+    BOOL   -> ("true"|"false");
+    NULL   -> "null";
+
+    .wrapRE -> /{\s*()\s*};
+:};
+
+let rec eval = \parsed cond parsed {
+    (object: (:pair, ...), ...): pair =>
+        # \(@item: (str: ('': key), json: ('': val)))
+            (@: //eval.value(.@item.STR.''), @value: eval(.@item.json)),
+    (array: (:json, ...), ...): json >> eval(.),
+    (STR: ('': str, ...), ...): //eval.value(str),
+    (NUM: ('': num, ...), ...): //eval.value(num),
+    (BOOL: ('': bool, ...), ...): //eval.value(bool),
+    (NULL: _, ...): (),
+};
+
+let evalStream = \parsed parsed.objects >> eval(.);
+
+(
+    grammar: g,
+    parse: \json eval(//grammar.parse(g, "json", json)),
+    parseStream: \stream evalStream(//grammar.parse(g, "stream", stream)),
+)

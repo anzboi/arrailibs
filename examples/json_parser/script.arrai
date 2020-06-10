@@ -1,0 +1,3 @@
+let json = //{./json.arrai};
+
+json.parse(//os.file("file.json"))

@@ -1,0 +1,138 @@
+let grammar = {://grammar.lang.wbnf.grammar:
+ddl                 -> stmt=(create_database|create_table|create_index|alter_table|drop_table|drop_index):";" ";" \s*;
+
+create_database     -> "CREATE DATABASE" database=([a-z][0-9a-z_]*[0-9a-z]);
+
+create_table        -> "CREATE TABLE" table_name "("
+						    attr=(column_name attr_type not_null? options_def?):"," ","
+					   ")"
+					   pk=("PRIMARY KEY" "(" key_part ")")
+					   ("," cluster)*;
+not_null            -> "NOT NULL";
+cluster             -> "INTERLEAVE IN PARENT" table_name ("ON DELETE" on_delete)?;
+on_delete           -> CASCADE   = "CASCADE"
+                     | NO_ACTION = "NO ACTION";
+
+create_index        -> "CREATE" unique=("UNIQUE")? nullfiltered=("NULL_FILTERED")? "INDEX" index_name "ON" table_name "(" key_part ")" storing_clause? interleaving_clause?;
+storing_clause      -> "STORING" "(" column_name:",",? ")";
+interleaving_clause -> "INTERLEAVE IN" table_name;
+
+alter_table         -> "ALTER TABLE" table_name alter=(table_alteration|attr_alteration);
+table_alteration    -> ADD  = ("ADD COLUMN" column_name (attr_type | options_def))
+					 | DROP = ("DROP COLUMN" column_name)
+					 | SET  = ("SET ON DELETE" on_delete);
+attr_alteration     -> "ALTER COLUMN" column_name (attr_type | "SET" options_def);
+
+drop_table          -> "DROP TABLE" table_name;
+
+drop_index          -> "DROP INDEX" index_name;
+
+options_def         -> "OPTIONS(" (option):",",? ")";
+option              -> "commit_timestamp =" ("true"|"false");
+key_part            -> (column_name ("ASC"|"DESC")?):",",?;
+attr_type           -> (SCALAR_TYPE|ARRAY_TYPE);
+
+ARRAY_TYPE          -> "ARRAY<" SCALAR_TYPE ">";
+SCALAR_TYPE         -> BOOL      = "BOOL"
+                     | INT64     = "INT64"
+                     | FLOAT64   = "FLOAT64"
+                     | DATE      = "DATE"
+                     | TIMESTAMP = "TIMESTAMP"
+                     | STRING    = "STRING(" length ")"
+                     | BYTES     = "BYTES(" length ")";
+
+length              -> (int64_value|"MAX");
+
+table_name          -> [$@A-Za-z_][0-9$@A-Za-z_]*;
+column_name         -> [$@A-Za-z_][0-9$@A-Za-z_]*;
+index_name          -> [$@A-Za-z_][0-9$@A-Za-z_]*;
+
+int64_value         -> hex_value|decimal_value;
+decimal_value       -> [-]?\d+;
+hex_value           -> /{-?0x[[:xdigit:]]+};
+
+.wrapRE -> /{(?i)\s*()};
+:};
+
+let eval_int64 = \parsed cond parsed {
+    (decimal_value: ('': val), ...): //eval.value(val),
+    (hex_value: ('': val), ...): 0,
+};
+
+let eval_type = \parsed
+    let data = cond parsed {
+        (SCALAR_TYPE: scalar, ...): (scalar: scalar, array: false),
+        (ARRAY_TYPE: (SCALAR_TYPE: scalar, ...), ...): (scalar: scalar, array: true),
+    };
+    let type = cond data.scalar {
+        (BOOL: _, ...): (type: "bool", length: 0),
+        (INT64: _, ...): (type: "int64", length: 0),
+        (FLOAT64: _, ...): (type: "float64", length: 0),
+        (DATE: _, ...): (type:"date", length: 0),
+        (TIMESTAMP: _, ...): (type:"timestamp", length: 0),
+        (STRING: _, length: length, ...): (type: "string", length: eval_int64(length.int64_value)),
+        (BYTES: _, length: length, ...): (type: "bytes", length: eval_int64(length.int64_value)),
+    };
+    (
+        type: type.type,
+        length: type.length,
+        array: data.array,
+    );
+
+let eval_attribute = \parsed
+    let type = eval_type(parsed.attr_type);
+    (
+        name: parsed.column_name.'' rank (:.@),
+        type: type.type,
+        length: type.length,
+        array: type.array,
+        nullable: cond parsed {(not_null: _, ...): false, _: true},
+    );
+
+let eval_ddl = \parsed parsed.stmt >> cond . {
+    (create_table: val, ...): (
+        stmt: "create_table",
+        data: (
+            name: val.table_name.'' rank (:.@),
+            attributes: val.attr >> eval_attribute(.),
+            primary_key: val.pk.key_part.column_name => \(@item: ('': attr), ...) attr rank (:.@),
+        ),
+    ),
+};
+
+let apply_create_table = \relation \model
+    let relations = cond model.relations where .@item.name=relation.name {
+        false: //seq.concat([model.relations, [relation]]),
+        true: false, # a match means the ddl is trying to create a table that already exists
+    };
+    (
+        relations: relations,
+    );
+
+let apply_stmt = \stmt \model
+    cond stmt {
+        (stmt: "create_table", data: relation): apply_create_table(relation, model),
+        _: model,
+    };
+
+let rec apply_stmts = \stmts \model
+    cond stmts count {
+        0: model,
+        i:
+            let m = apply_stmts(stmts where .@ < i-1, model);
+            apply_stmt(stmts(i-1), m),
+    };
+
+let parse_ddl = \bytes eval_ddl(//grammar.parse(grammar, "ddl", bytes));
+
+let parse_schema_files = \files //seq.concat(files >> parse_ddl(//os.file(.)));
+
+let empty_model = (relations: []);
+
+(
+    empty_model:        empty_model,
+    parse_ddl:          parse_ddl,
+    parse_schema_files: parse_schema_files,
+    apply_stmt:         apply_stmt,
+    apply_stmts:        apply_stmts,
+)

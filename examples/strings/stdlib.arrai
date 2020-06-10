@@ -1,0 +1,2 @@
+//seq.split(" ", "Hello World")
+//seq.join(" ", ["Hello", "World"])
