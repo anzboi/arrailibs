@@ -4,10 +4,10 @@ ddl                 -> stmt=(create_database|create_table|create_index|alter_tab
 create_database     -> "CREATE DATABASE" database=([a-z][0-9a-z_]*[0-9a-z]);
 
 create_table        -> "CREATE TABLE" table_name "("
-						    attr=(column_name attr_type not_null? options_def?):"," ","
+                           attr=(column_name attr_type not_null? options_def?):"," ","
 					   ")"
-					   pk=("PRIMARY KEY" "(" key_part ")")
-					   ("," cluster)*;
+                       pk=("PRIMARY KEY" "(" key_part ")")
+                       ("," cluster)*;
 not_null            -> "NOT NULL";
 cluster             -> "INTERLEAVE IN PARENT" table_name ("ON DELETE" on_delete)?;
 on_delete           -> CASCADE   = "CASCADE"
@@ -19,8 +19,8 @@ interleaving_clause -> "INTERLEAVE IN" table_name;
 
 alter_table         -> "ALTER TABLE" table_name alter=(table_alteration|attr_alteration);
 table_alteration    -> ADD  = ("ADD COLUMN" column_name (attr_type | options_def))
-					 | DROP = ("DROP COLUMN" column_name)
-					 | SET  = ("SET ON DELETE" on_delete);
+                     | DROP = ("DROP COLUMN" column_name)
+                     | SET  = ("SET ON DELETE" on_delete);
 attr_alteration     -> "ALTER COLUMN" column_name (attr_type | "SET" options_def);
 
 drop_table          -> "DROP TABLE" table_name;
