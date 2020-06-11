@@ -170,9 +170,6 @@ let rec apply_stmt = \stmt \model
         # match against an arrai of statements and recursively apply them in order
         [first, ...rem]: apply_stmt(rem, apply_stmt(first, model)),
         []: model,
-
-        # guard against an invalid value
-        _: false,
     };
 
 ################# EXPOSE ################
