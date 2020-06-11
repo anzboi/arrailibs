@@ -68,17 +68,17 @@ let eval_int64 = \parsed cond parsed {
 # eval_type turns an attr_type parse node into an attribute type
 let eval_type = \parsed
     let data = cond parsed {
-        (SCALAR_TYPE: scalar, ...): (scalar: scalar, array: false),
+        (SCALAR_TYPE: scalar, ...):                    (scalar: scalar, array: false),
         (ARRAY_TYPE: (SCALAR_TYPE: scalar, ...), ...): (scalar: scalar, array: true),
     };
     let type = cond data.scalar {
-        (BOOL: _, ...): (type: "bool", length: 0),
-        (INT64: _, ...): (type: "int64", length: 0),
-        (FLOAT64: _, ...): (type: "float64", length: 0),
-        (DATE: _, ...): (type:"date", length: 0),
-        (TIMESTAMP: _, ...): (type:"timestamp", length: 0),
+        (BOOL: _, ...):                   (type: "bool", length: 0),
+        (INT64: _, ...):                  (type: "int64", length: 0),
+        (FLOAT64: _, ...):                (type: "float64", length: 0),
+        (DATE: _, ...):                   (type:"date", length: 0),
+        (TIMESTAMP: _, ...):              (type:"timestamp", length: 0),
         (STRING: _, length: length, ...): (type: "string", length: eval_int64(length.int64_value)),
-        (BYTES: _, length: length, ...): (type: "bytes", length: eval_int64(length.int64_value)),
+        (BYTES: _, length: length, ...):  (type: "bytes", length: eval_int64(length.int64_value)),
     };
     (
         type: type.type,
@@ -90,10 +90,10 @@ let eval_type = \parsed
 let eval_attribute = \parsed
     let type = eval_type(parsed.attr_type);
     (
-        name: parsed.column_name.'' rank (:.@),
-        type: type.type,
-        length: type.length,
-        array: type.array,
+        name:     parsed.column_name.'' rank (:.@),
+        type:     type.type,
+        length:   type.length,
+        array:    type.array,
         nullable: cond parsed {(not_null: _, ...): false, _: true},
     );
 
@@ -160,16 +160,16 @@ let apply_drop_index = \name \model
 let rec apply_stmt = \stmt \model
     cond stmt {
         # match against the single statement types
-        (stmt: "create_table", data: relation): apply_create_table(relation, model),
-        (stmt: "create_index", data: index): apply_create_index(index, model),
+        (stmt: "create_table", data: relation):  apply_create_table(relation, model),
+        (stmt: "create_index", data: index):     apply_create_index(index, model),
         (stmt: "alter_table", data: alteration): apply_alter_table(alteration, model),
-        (stmt: "drop_table", data: name): apply_drop_table(name, model),
-        (stmt: "drop_index", data: name): apply_drop_index(name, model),
+        (stmt: "drop_table", data: name):        apply_drop_table(name, model),
+        (stmt: "drop_index", data: name):        apply_drop_index(name, model),
         (...): model, # guard against unrecognised statements
 
         # match against an arrai of statements and recursively apply them in order
         [first, ...rem]: apply_stmt(rem, apply_stmt(first, model)),
-        []: model,
+        []:              model,
     };
 
 ################# EXPOSE ################
