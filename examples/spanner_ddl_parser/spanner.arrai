@@ -1,3 +1,5 @@
+# spanner ddl grammar
+# CREATE DATABASE statements are parsed to avoid errors but ignore by the modelling functions
 let grammar = {://grammar.lang.wbnf.grammar:
 ddl                 -> stmt=(create_database|create_table|create_index|alter_table|drop_table|drop_index):";" ";" \s*;
 
@@ -54,11 +56,16 @@ hex_value           -> /{-?0x[[:xdigit:]]+};
 .wrapRE -> /{(?i)\s*()};
 :};
 
+#################### PARSE TREE EVALUATORS ####################
+# These functions turn a spanner ddl parse tree into ddl statements
+
+# eval_int64 turns an int64 parse node into an integer
 let eval_int64 = \parsed cond parsed {
     (decimal_value: ('': val), ...): //eval.value(val),
     (hex_value: ('': val), ...): 0,
 };
 
+# eval_type turns an attr_type parse node into an attribute type
 let eval_type = \parsed
     let data = cond parsed {
         (SCALAR_TYPE: scalar, ...): (scalar: scalar, array: false),
@@ -79,6 +86,7 @@ let eval_type = \parsed
         array: data.array,
     );
 
+# eval_attribute turns an attr node into an attribute of a relation
 let eval_attribute = \parsed
     let type = eval_type(parsed.attr_type);
     (
@@ -89,17 +97,34 @@ let eval_attribute = \parsed
         nullable: cond parsed {(not_null: _, ...): false, _: true},
     );
 
+# eval_ddl turns a ddl parse tree into a list of ddl statements ready to be applied to a model
+# Use apply_stmt to apply these statements to a spanner model
 let eval_ddl = \parsed parsed.stmt >> cond . {
     (create_table: val, ...): (
         stmt: "create_table",
         data: (
             name: val.table_name.'' rank (:.@),
-            attributes: val.attr >> eval_attribute(.),
-            primary_key: val.pk.key_part.column_name => \(@item: ('': attr), ...) attr rank (:.@),
+            attributes: val.attr => eval_attribute(.@item),
+            primary_key: val.pk.key_part.column_name => (.@item.'' rank (:.@)),
         ),
+    ),
+    (drop_table: val, ...): (
+        stmt: "drop_table",
+        data: val.table_name.'' rank (:.@),
     ),
 };
 
+################## PARSERS ##################
+
+# parses a byte array against the ddl grammar and hands it to eval
+let parse_ddl = \bytes eval_ddl(//grammar.parse(grammar, "ddl", bytes));
+
+# parses a list of schema files. reads each file and hands to parse_ddl
+let parse_schema_files = \files //seq.concat(files >> parse_ddl(//os.file(.)));
+
+################## STATEMENTS #################
+
+# applies a create table statement
 let apply_create_table = \relation \model
     let relations = cond model.relations where .name=relation.name {
         false: model.relations | {relation},
@@ -109,24 +134,48 @@ let apply_create_table = \relation \model
         relations: relations,
     );
 
-let apply_stmt = \stmt \model
+# applies an alter table stamement
+# NOT IMPLEMENTED
+let apply_alter_table = \alteration \model
+    model;
+
+# applies a create index statement
+# NOT IMPLEMENTED
+let apply_create_index = \index \model
+    model;
+
+# applies a drop table statement
+let apply_drop_table = \name \model
+    let relations = model.relations where .name != relation;
+    (
+        relations: relations,
+    );
+
+# applies a drop_index statement
+# NOT IMPLEMENTED
+let apply_drop_index = \name \model
+    model;
+
+# applies either a single staement or a list of statements in the given order
+let rec apply_stmt = \stmt \model
     cond stmt {
+        # match against the single statement types
         (stmt: "create_table", data: relation): apply_create_table(relation, model),
-        _: model,
+        (stmt: "create_index", data: index): apply_create_index(index, model),
+        (stmt: "alter_table", data: alteration): apply_alter_table(alteration, model),
+        (stmt: "drop_table", data: name): apply_drop_table(name, model),
+        (stmt: "drop_index", data: name): apply_drop_index(name, model),
+        (...): model, # guard against unrecognised statements
+
+        # match against an arrai of statements and recursively apply them in order
+        [first, ...rem]: apply_stmt(rem, apply_stmt(first, model)),
+        []: model,
+
+        # guard against an invalid value
+        _: false,
     };
 
-let rec apply_stmts = \stmts \model
-    cond stmts count {
-        0: model,
-        i:
-            let m = apply_stmts(stmts where .@ < i-1, model);
-            apply_stmt(stmts(i-1), m),
-    };
-
-let parse_ddl = \bytes eval_ddl(//grammar.parse(grammar, "ddl", bytes));
-
-let parse_schema_files = \files //seq.concat(files >> parse_ddl(//os.file(.)));
-
+################# EXPOSE ################
 (
     # empty model, use this as the base of an apply_stmt call to create a model from a ddl statement
     empty_model:        (relations: {}),
@@ -139,7 +188,4 @@ let parse_schema_files = \files //seq.concat(files >> parse_ddl(//os.file(.)));
 
     # applies a ddl stmt to a model. Use empty_model to get a model from scratch
     apply_stmt:         apply_stmt,
-
-    # applies the given ddls statements in the give order to the model. Use empty_model to create a model from scratch
-    apply_stmts:        apply_stmts,
 )
