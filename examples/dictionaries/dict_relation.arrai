@@ -1,0 +1,5 @@
+{"hello": "world", "abc": 123} => (key: .@, value: .@value)
+
+# = {(key: 'abc', value: 123), (key: 'hello', value: 'world')}
+# Like arrays and strings, dictionaries are represented using relations
+# @ holds the key, while @value holds the value.

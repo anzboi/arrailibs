@@ -1,0 +1,9 @@
+let v = "Hello";
+
+# This is basically a switch statement
+cond v {
+    "Hello": "Do Hello",
+    "World": "Do World",
+}
+
+# = 'Do Hello'

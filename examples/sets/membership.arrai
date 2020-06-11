@@ -1,0 +1,5 @@
+# is '1' in {2, 3, 4}
+1 <: {2, 3, 4}
+
+# = false
+# does not work for arrays out of the box (convert array to set first)

@@ -1,0 +1,5 @@
+{"a": 1, 23: 45, (tuple: 20): "hello"}
+
+# Dictionaries use the same curle bracket {} notation as sets, but are key-value pairs, instead of just elements.
+# Dictionaries can take anything as a key, whereas tuples are limited to idents.
+# Use a tuple when you know what values it holds and can name them, and use a map for anything else.

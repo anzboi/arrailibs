@@ -1,0 +1,5 @@
+# dictionary values can be accessed by key using function call notation
+
+{"Hello": "World"}("Hello")
+
+# = "World"

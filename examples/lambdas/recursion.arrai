@@ -1,0 +1,18 @@
+# use the rec keyword to declare a function as recursive
+# recursive functions typically use a conditional to handle the base case
+let rec factorial = \n cond n {
+    0: 1,
+    n: n * factorial(n-1),
+};
+
+[0, 1, 2, 3, 4] >> factorial(.)
+
+# = [1, 1, 2, 6, 24]
+
+# More information:
+# Arrai does not actually support recursive functions natively. The rec keyword is actually syntactic sugar for use of the //fn.fix() function,
+# the fixed point combinator
+# let factorial = //fn.fix(\factorial \n cond n {
+#   0: 1,
+#   n: n * factorial(n-1),
+# })

@@ -1,0 +1,23 @@
+# In this case, one of the node can have one of three choices
+# Name each choice so they become nested in a tuple in the parse tree
+let grammar = {://grammar.lang.wbnf.grammar:
+text -> rule:",";
+rule -> HELLO = "hello"
+      | WORLD = "world"
+      | FOO   = "foo";
+:};
+
+let text = <<`hello,world,foo`>>;
+
+let parsed = //grammar.parse(grammar, "text", text);
+# = ('': [5\',', 11\','], @rule: 'text', rule: [(@choice: [0], HELLO: ('': 'hello')), (@choice: [1], WORLD: ('': 6\'world')), (@choice: [2], FOO: ('': 12\'foo'))])
+# Notice the tuples named HELLO, WORLD and FOO, we can exploit this when evaluating the tree
+
+parsed.rule >> cond . {
+    (HELLO: _, ...): "hello",
+    (WORLD: _, ...): "world",
+    (FOO: _, ...): "foo",
+}
+# = ["hello", "world", "foo"]
+
+# You can imagine how you might use this to parse a simple csv file

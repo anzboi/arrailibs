@@ -1,0 +1,6 @@
+[5, 4, 3, 3, 2, 1] orderby .@item >> .@item
+
+# = [1, 2, 3, 3, 4, 5]
+
+# The reason we need >> is because the orderby acts on the set and produces an array
+# the resulting array has items that are array tuples from the original array

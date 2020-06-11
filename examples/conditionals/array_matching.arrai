@@ -1,0 +1,21 @@
+let arr = [0, 1, 2, 3, 4, 5];
+
+cond arr {
+    [first, ...rem]: {first, rem},
+    []: {}
+}
+
+# = {0, [1, 2, 3, 4, 5]}
+
+# The ... can be put anywhere and matches any number of elements
+# [...first, last]
+
+# omit the bind variable to ignore (in this case, ignore the middle)
+# [first, ..., last]
+
+# Combine this with recursion to loop over an array sequentially
+# let rec sum = \arr cond arr {
+#   [current, ...rem]: current + sum(rem),
+#   []: 0,
+# }
+# Useful if your operation is not commutative

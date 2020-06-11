@@ -1,0 +1,2 @@
+# Tuples are simple key-value pairs
+(a: 1, b: "Hello", c: {1, 2, 3})

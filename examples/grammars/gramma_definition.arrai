@@ -1,0 +1,14 @@
+# grammars contain two components embedded in the following syntax
+# {: grammar.rule : bytes_to_parse_against_rule :}
+
+# This defines a new grammar using wbnf
+let grammar = {://grammar.lang.wbnf.grammar:
+rule -> "Hello";
+:};
+
+{:grammar.rule:
+Hello
+:}
+
+# = ('': 242\'Hello')
+# This is what a simple parse node looks like

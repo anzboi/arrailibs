@@ -1,0 +1,3 @@
+[1, 2, 3, 4, 5] => (position: .@, item: .@item)
+
+# = {(item: 1, position: 0), (item: 2, position: 1), (item: 3, position: 2), (item: 4, position: 3), (item: 5, position: 4)}

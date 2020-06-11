@@ -1,0 +1,24 @@
+# aggregating a sum of an attribute grouped by another involves using nest to first group
+# the attribute we wish to sum, followed by applying the sum operator to the group set
+
+# following is a relation containing part ids and their types
+# We wish to compute the average cost across each type
+{|part,type,cost|
+ (1000, "windshield", 350),
+ (1001, "headlight", 12.50),
+ (1005, "radio", 80.70),
+ (1003, "oil", 55.00),
+ (1008, "oil", 65.00),
+ (1004, "windshield", 400),
+ (1006, "radio", 60.95),
+ (1002, "headlight", 16.90),
+ (1007, "headlight", 14.35),
+ (1009, "tyre", 205),
+ (1010, "oil", 64.30),
+ (1011, "tyre", 250.80),
+}
+nest |part,cost|parts # groups the part and cost attribute against the type
+=> (
+    :.type,
+    average: .parts => .cost mean .,
+)

@@ -1,0 +1,12 @@
+# nesting is the only grouping operator in arrai
+
+{|a, b, c|
+ (1, 2, 3),
+ (1, 2, 4),
+ (2, 2, 4)
+}
+nest |a, b|ab
+
+# = {(ab: {(a: 1, b: 2)}, c: 3), (ab: {(a: 1, b: 2), (a: 2, b: 2)}, c: 4)}
+# explanation: nesting groups the nested attributes into a single attribute
+# The new nested attribute contains all instances of a,b for each c.

@@ -1,0 +1,5 @@
+let myfunc = \input input*2;
+
+myfunc(2)
+
+# = 4

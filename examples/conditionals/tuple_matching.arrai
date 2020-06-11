@@ -1,0 +1,11 @@
+let t = [(a: 1, b: 2), (b: 3)];
+
+t >> cond . {
+    (a: a_value, ...): a_value,
+    (b: b_value, ...): b_value,
+}
+
+# = [1, 3]
+# First match always wins. The first tuple matches the first pattern, so it binds a_value and returns that
+
+# Tuple matching is used extensively in evaluating parse trees

@@ -1,0 +1,12 @@
+# Selection is more formally known as projection
+
+{|a, b, c|
+ (1, 2, 3),
+ (1, 2, 4),
+ (2, 2, 4)
+}
+
+# project onto a and b, renaming b to z
+=> (:.a, z: .b)
+
+# = {(a: 1, z: 2). (a: 2, z: 2)}

@@ -1,0 +1,5 @@
+"Hello World" where .@ < 5
+# = "Hello"
+
+# "Hello World" where 2 < .@ && .@ < 5 rank(:.@)
+# The extra rank here is to shift the positional attribute to start from 0

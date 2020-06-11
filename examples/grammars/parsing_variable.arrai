@@ -1,0 +1,13 @@
+# You can also use the //grammar.parse function to parse bytes held in a variable
+
+let grammar = {://grammar.lang.wbnf.grammar:
+rule -> ("hello"|"world");
+:};
+
+let bytes = <<"world">>;
+
+//grammar.parse(grammar, "rule", bytes)
+
+# = ('': 'world', @choice: [1], @rule: 'rule')
+
+# This is useful for parsing text that comes from another file, see the json or spanner_ddl parser for an example

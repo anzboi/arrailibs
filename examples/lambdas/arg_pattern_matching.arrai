@@ -1,0 +1,13 @@
+{|a, b|
+ (1, 2),
+ (1, 3),
+ (2, 3),
+}
+=> \(a: value, ...) value*2
+
+# = {2, 4}
+
+# This lambda takes a pattern as input and will match its input against the pattern
+# In this case, it will match against the 'a' attribute of each tuple, binding the value to 'value'
+# The '...' tells the pattern to match against anything else in the tuple and ignore it.
+# This is useful if your input is complicated and you only care about a few particular values.
