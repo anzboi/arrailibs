@@ -2,4 +2,4 @@ let spanner = //{./spanner.arrai};
 
 let stmts = spanner.parse_schema_files(["example.sql"]);
 let model = spanner.apply_stmts(stmts, spanner.empty_model);
-model
+model.relations

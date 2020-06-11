@@ -101,8 +101,8 @@ let eval_ddl = \parsed parsed.stmt >> cond . {
 };
 
 let apply_create_table = \relation \model
-    let relations = cond model.relations where .@item.name=relation.name {
-        false: //seq.concat([model.relations, [relation]]),
+    let relations = cond model.relations where .name=relation.name {
+        false: model.relations | {relation},
         true: false, # a match means the ddl is trying to create a table that already exists
     };
     (
@@ -127,12 +127,19 @@ let parse_ddl = \bytes eval_ddl(//grammar.parse(grammar, "ddl", bytes));
 
 let parse_schema_files = \files //seq.concat(files >> parse_ddl(//os.file(.)));
 
-let empty_model = (relations: []);
-
 (
-    empty_model:        empty_model,
+    # empty model, use this as the base of an apply_stmt call to create a model from a ddl statement
+    empty_model:        (relations: {}),
+
+    # parses a single byte array representing a spanner schema
     parse_ddl:          parse_ddl,
+
+    # parses a list of schema files. opens the files and calls parse_ddl on them in the given order
     parse_schema_files: parse_schema_files,
+
+    # applies a ddl stmt to a model. Use empty_model to get a model from scratch
     apply_stmt:         apply_stmt,
+
+    # applies the given ddls statements in the give order to the model. Use empty_model to create a model from scratch
     apply_stmts:        apply_stmts,
 )
