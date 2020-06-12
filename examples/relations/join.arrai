@@ -1,0 +1,17 @@
+let r1 = {|a,b|
+ (1,2),
+ (1,3),
+};
+
+let r2 = {|a,c,d|
+ (1, 4, 5),
+ (2, 3, 4),
+};
+
+r1 <&> r2
+
+# = {(a: 1, b: 2, c: 4, d: 5), (a: 1, b: 3, c: 4, d: 5)}
+
+# The join here matches on the command attribute 'a'
+# 2 tuple from r1 and 1 tuple from r2 share the value 'a = 1'
+# The result contains two tuples, one for

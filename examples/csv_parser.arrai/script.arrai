@@ -1,0 +1,3 @@
+let csv = //{./csv.arrai};
+
+csv.parse(//os.file("example.csv"))

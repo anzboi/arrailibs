@@ -3,11 +3,12 @@
 
 # This defines a new grammar using wbnf
 let grammar = {://grammar.lang.wbnf.grammar:
-rule -> "Hello";
+rule -> node=("Hello"):",";
+rule2 -> "Goodbye";
 :};
 
 {:grammar.rule:
-Hello
+Hello,Hello
 :}
 
 # = ('': 242\'Hello')

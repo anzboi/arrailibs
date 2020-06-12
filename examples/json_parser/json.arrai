@@ -14,7 +14,6 @@ let g = {://grammar.lang.wbnf.grammar:
 
 let rec eval = \parsed cond parsed {
     (object: (:pair, ...), ...): pair =>
-        # \(@item: (str: ('': key), json: ('': val)))
             (@: //eval.value(.@item.STR.''), @value: eval(.@item.json)),
     (array: (:json, ...), ...): json >> eval(.),
     (STR: ('': str, ...), ...): //eval.value(str),

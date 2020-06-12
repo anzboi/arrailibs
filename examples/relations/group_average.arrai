@@ -17,8 +17,8 @@
  (1010, "oil", 64.30),
  (1011, "tyre", 250.80),
 }
-nest |part,cost|parts # groups the part and cost attribute against the type
+nest |part,cost|data # groups the part and cost attribute against the type
 => (
     :.type,
-    average: .parts => .cost mean .,
+    mean: .data mean .cost,
 )
