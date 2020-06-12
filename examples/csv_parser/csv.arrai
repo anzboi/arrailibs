@@ -1,0 +1,19 @@
+let grammar = {://grammar.lang.wbnf.grammar:
+csv -> header=(row) "\n" row:"\n",?;
+row -> value=(\w*):",";
+
+.wrapRE -> /{\_*()\_*};
+:};
+
+let eval = \parsed
+    let header = parsed.header.row.value >> (.'' rank (@: .@));
+    parsed.row >> (.value => (
+        (
+            @: header(.@),
+            @value: .@item.'' rank (@: .@),
+        )
+    ));
+
+(
+    parse: \bytes eval(//grammar.parse(grammar, "csv", bytes))
+)
