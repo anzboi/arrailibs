@@ -1,5 +1,0 @@
-let fun = \num num*2;
-
-//test.suite({
-    //test.assert(4, fun(2))
-})

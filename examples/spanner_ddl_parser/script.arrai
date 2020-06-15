@@ -1,6 +1,4 @@
 let spanner = //{./spanner.arrai};
 
 let stmts = spanner.parse_schema_files(["example.sql"]);
-let model = spanner.apply_stmt(stmts, spanner.empty_model);
-
-model
+stmts => .@item where .stmt = "create_table" => .data.foreign_keys

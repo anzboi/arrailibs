@@ -5,12 +5,14 @@ ddl                 -> stmt=(create_database|create_table|create_index|alter_tab
 
 create_database     -> "CREATE DATABASE" database=([a-z][0-9a-z_]*[0-9a-z]);
 
-create_table        -> "CREATE TABLE" table_name "("
-                           attr=(column_name attr_type not_null? options_def?):"," ","
-					   ")"
+create_table        -> "CREATE TABLE" table_name "("(
+                              attr=(column_name attr_type not_null? options_def?)
+                            | table_constraint
+                        ):"," "," ")"
                        pk=("PRIMARY KEY" "(" key_part ")")
                        ("," cluster)*;
 not_null            -> "NOT NULL";
+table_constraint    -> "CONSTRAINT" constraint_name "FOREIGN KEY" "(" column_name:"," ")" "REFERENCES" foreign=(table_name "(" column_name:"," ")");
 cluster             -> "INTERLEAVE IN PARENT" table_name ("ON DELETE" on_delete)?;
 on_delete           -> CASCADE   = "CASCADE"
                      | NO_ACTION = "NO ACTION";
@@ -19,10 +21,12 @@ create_index        -> "CREATE" unique=("UNIQUE")? nullfiltered=("NULL_FILTERED"
 storing_clause      -> "STORING" "(" column_name:",",? ")";
 interleaving_clause -> "INTERLEAVE IN" table_name;
 
-alter_table         -> "ALTER TABLE" table_name alter=(table_alteration|attr_alteration);
-table_alteration    -> ADD  = ("ADD COLUMN" column_name (attr_type | options_def))
-                     | DROP = ("DROP COLUMN" column_name)
-                     | SET  = ("SET ON DELETE" on_delete);
+alter_table         -> "ALTER TABLE" table_name (alter=(table_alteration|attr_alteration)):",";
+table_alteration    -> ADD_COLUMN      = ("ADD COLUMN" column_name (attr_type | options_def))
+                     | DROP_COLUMN     = ("DROP COLUMN" column_name)
+                     | SET_COLUMN      = ("SET ON DELETE" on_delete)
+                     | ADD_CONSTRAINT  = ("ADD" table_constraint)
+                     | DROP_CONSTRAINT = ("DROP CONSTRAINT" constraint_name);
 attr_alteration     -> "ALTER COLUMN" column_name (attr_type | "SET" options_def);
 
 drop_table          -> "DROP TABLE" table_name;
@@ -46,6 +50,7 @@ SCALAR_TYPE         -> BOOL      = "BOOL"
 length              -> (int64_value|"MAX");
 
 table_name          -> [$@A-Za-z_][0-9$@A-Za-z_]*;
+constraint_name     -> [$@A-Za-z_][0-9$@A-Za-z_]*;
 column_name         -> [$@A-Za-z_][0-9$@A-Za-z_]*;
 index_name          -> [$@A-Za-z_][0-9$@A-Za-z_]*;
 
@@ -97,6 +102,54 @@ let eval_attribute = \parsed
         nullable: cond parsed {(not_null: _, ...): false, _: true},
     );
 
+let eval_foreign_key_constraint = \parsed
+    let reference = parsed.foreign -> (
+        table_name: .table_name.'' rank (@: .@),
+        attributes: .column_name >> (.'' rank (@: .@)),
+    );
+    (
+        constraint_name: parsed.constraint_name.'' rank (@: .@),
+        foreign_keys: parsed.column_name => (
+            attribute: .@item.'' rank (@: .@),
+            reference_table: reference.table_name,
+            reference_attribute: reference.attributes(.@),
+        ),
+    );
+
+let eval_table_alteration = \parsed cond parsed {
+    (table_alteration: (ADD_COLUMN: data, ...), ...): (
+        type: "add_column",
+        alteration: (
+            name: data.column_name.'' rank (@: .@),
+            type: eval_type(data.attr_type),
+        ),
+    ),
+
+    (table_alteration: (DROP_COLUMN: data, ...), ...): (
+        type: "drop_column",
+        alteration: (
+            name: data.column_name.'' rank (@: .@),
+        ),
+    ),
+
+    (table_alteration: (SET_COLUMN: data, ...), ...): (
+        type: "on_delete",
+        alteration: data
+    ),
+
+    (table_alteration: (ADD_CONSTRAINT: data, ...), ...): (
+        type: "add_constraint",
+        alteration: eval_foreign_key_constraint(data.table_constraint),
+    ),
+
+    (table_alteration: (DROP_CONSTRAINT: data, ...), ...): (
+        type: "drop_constraint",
+        alteration: data,
+    ),
+
+    (attr_alteration: data, ...): (type: "alter_column", alteration: data),
+};
+
 # eval_ddl turns a ddl parse tree into a list of ddl statements ready to be applied to a model
 # Use apply_stmt to apply these statements to a spanner model
 let eval_ddl = \parsed parsed.stmt >> cond . {
@@ -105,9 +158,21 @@ let eval_ddl = \parsed parsed.stmt >> cond . {
         data: (
             name: val.table_name.'' rank (:.@),
             attributes: val.attr => eval_attribute(.@item),
+            foreign_keys: cond val {
+                (table_constraint: [...constraints], ...): constraints => eval_foreign_key_constraint(.@item),
+            },
             primary_key: val.pk.key_part.column_name => (.@item.'' rank (:.@)),
         ),
     ),
+
+    (alter_table: val, ...): (
+        stmt: "alter_table",
+        data: (
+            table_name: val.table_name.'' rank (@: .@),
+            alterations: val.alter >> eval_table_alteration(.),
+        ),
+    ),
+
     (drop_table: val, ...): (
         stmt: "drop_table",
         data: val.table_name.'' rank (:.@),
