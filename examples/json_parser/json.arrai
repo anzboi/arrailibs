@@ -1,4 +1,4 @@
-let g = {://grammar.lang.wbnf.grammar:
+let g = {://grammar.lang.wbnf[grammar]:
     stream -> objects=object:/{};
     json   -> (object|array|STR|NUM|BOOL|NULL);
     object -> "{" (pair=(STR ":" json):",")? "}";

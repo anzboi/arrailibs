@@ -1,6 +1,6 @@
 # spanner ddl grammar
 # CREATE DATABASE statements are parsed to avoid errors but ignore by the modelling functions
-let grammar = {://grammar.lang.wbnf.grammar:
+let grammar = {://grammar.lang.wbnf[grammar]:
 ddl                 -> stmt=(create_database|create_table|create_index|alter_table|drop_table|drop_index):";" ";" \s*;
 
 create_database     -> "CREATE DATABASE" database=([a-z][0-9a-z_]*[0-9a-z]);

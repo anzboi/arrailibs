@@ -1,4 +1,4 @@
-let grammar = {://grammar.lang.wbnf.grammar:
+let grammar = {://grammar.lang.wbnf[grammar]:
 csv -> header=(row) "\n" row:"\n",?;
 row -> value=(\w*):",";
 
