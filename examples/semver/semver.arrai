@@ -18,40 +18,69 @@ let rec union_array = \arr
     cond arr {
         [elem, ...rem]: elem | union_array(rem),
         [elem]: elem,
-    };
+    }
+;
 
-let stich_prerelease = \node
+let stitch_prerelease = \node
     let identity = \t t;
     let dots = cond node {
         ('': [...elems], ...): union_array(elems),
     };
-    let elems = union_array(node.preid >> union_array(.ALPHAIDENT.''));
-    (dots | elems) rank (:.@);
+    let elems = union_array(node.preid >> cond . {
+        # match on either alpha or numeric ident
+        (ALPHAIDENT: ('': arr, ...), ...): union_array(arr),
+        (NUMERICIDENT: ('': num, ...), ...): num,
+    });
+    (dots | elems) rank (:.@)
+;
 
-let stich_build = \node
+let stitch_build = \node
     let identity = \t t;
     let dots = cond node {
         ('': [...elems], ...): union_array(elems),
     };
-    let elems = union_array(node.buildid >> union_array(.ALPHAIDENT.''));
+    let elems = union_array(node.buildid >> cond . {
+        (ALPHAIDENT: ('': arr, ...), ...): union_array(arr),
+        (DIGITS: ('': digits, ...), ...): digits,
+    });
     (dots | elems) rank (:.@);
 
-let parse = \bytes //grammar.parse(grammar, "semver", bytes) ->
+let eval = \parsed (
+    major: parsed.core.maj.'' rank (@:.@) -> //eval.value(.),
+    minor: parsed.core.min.'' rank (@:.@) -> //eval.value(.),
+    patch: parsed.core.patch.'' rank (@:.@) -> //eval.value(.),
+    prerelease: cond parsed {
+        (prerelease: node, ...): stitch_prerelease(node),
+    },
+    build: cond parsed {
+        (build: node, ...): stitch_build(node),
+    },
+);
+
+
+let parse = \bytes eval(//grammar.parse(grammar, "semver", bytes)) ->
     (
-        string: bytes, # TODO: if bytes is actually a byte array, convert to string
-        maj: .core.maj.'' rank (@:.@) -> //eval.value(.),
-        min: .core.min.'' rank (@:.@) -> //eval.value(.),
-        patch: .core.patch.'' rank (@:.@) -> //eval.value(.),
-        prerelease: cond . {
-            (prerelease: node, ...): stich_prerelease(node),
-        },
-        build: cond . {
-            (build: node, ...): stitch_build(node),
-        },
+        :.major,
+        :.minor,
+        :.patch,
+        :.prerelease,
+        :.build,
     )
 ;
+
+let string = \obj
+    let pre = cond obj.prerelease {
+        {}: "",
+        _: "-" + obj.prerelease,
+    };
+    let build = cond obj.build {
+        {}: "",
+        _: "+" + obj.build,
+    };
+$`${obj.major}.${obj.minor}.${obj.patch}${pre}${build}`;
 
 (
     :grammar,
     :parse,
+    :string,
 )
