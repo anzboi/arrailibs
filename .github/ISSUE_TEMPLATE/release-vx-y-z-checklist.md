@@ -1,15 +1,16 @@
 ---
-name: Release vX.Y.Z checklist
-about: Production release checklist
-title: ''
+name: Release checklist
+about: Start a checklist for the next production release
+title: 'Release vX.Y.Z'
 labels: ''
 assignees: ''
 
 ---
-
 # Description
 
-Please provide a brief description for this release
+This issue tracks the requirements for this release
+
+<Please provide a brief description for this release>
 
 # Checklist
 
