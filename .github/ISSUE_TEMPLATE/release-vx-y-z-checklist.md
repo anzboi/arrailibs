@@ -8,9 +8,14 @@ assignees: ''
 ---
 # Description
 
-This issue tracks the requirements for this release
+This issue tracks the requirements for the next release
 
-<Please provide a brief description for this release>
+<Please provide a brief description for what will be released>
+
+# Jira Epics
+
+* [Jira ticket](link)
+* ...
 
 # Pre-release checklist
 
