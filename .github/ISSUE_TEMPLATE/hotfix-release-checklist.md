@@ -1,7 +1,7 @@
 ---
-name: Release checklist
-about: Start a checklist for the next production release
-title: Release vX.Y.Z
+name: Hotfix release checklist
+about: Hotfix release checklist
+title: ''
 labels: ''
 assignees: ''
 
